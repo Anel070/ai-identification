@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: ai-video-detector
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ai-video-detector-db
+          property: connectionString
+
+databases:
+  - name: ai-video-detector-db
+    plan: free
+    databaseName: aivideodetector
+    user: aivideodetector
