@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Video Detector</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .user-badge {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 50px;
+      padding: 6px 14px 6px 8px;
+      font-size: 14px;
+      color: rgba(255,255,255,0.85);
+    }
+    .user-avatar {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; color: #fff;
+    }
+    .logout-btn {
+      background: none; border: none;
+      color: rgba(255,255,255,0.4);
+      cursor: pointer; font-size: 13px;
+      padding: 4px 8px; border-radius: 6px;
+      transition: all 0.2s;
+    }
+    .logout-btn:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
+    .history-link {
+      color: rgba(255,255,255,0.5);
+      font-size: 13px;
+      cursor: pointer;
+      text-decoration: underline;
+      text-align: center;
+      margin-top: 16px;
+      display: block;
+    }
+    .history-section {
+      margin-top: 24px;
+      display: none;
+    }
+    .history-section h3 {
+      color: rgba(255,255,255,0.7);
+      font-size: 14px;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .history-item {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .history-item .fname { color: rgba(255,255,255,0.8); font-size: 13px; }
+    .history-item .date { color: rgba(255,255,255,0.35); font-size: 12px; }
+    .verdict-chip {
+      font-size: 11px; font-weight: 700;
+      padding: 3px 8px; border-radius: 20px;
+    }
+    .chip-ai { background: rgba(239,68,68,0.2); color: #fca5a5; }
+    .chip-real { background: rgba(34,197,94,0.2); color: #86efac; }
+    .chip-unclear { background: rgba(234,179,8,0.2); color: #fde047; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🔍 AI Video Detector</h1>
+      <div class="user-badge" id="userBadge">
+        <div class="user-avatar" id="userAvatar">?</div>
+        <span id="userName">...</span>
+        <button class="logout-btn" onclick="logout()" title="Выйти">✕</button>
+      </div>
+    </div>
+    <p class="subtitle">Определяет, создано ли видео с помощью ИИ</p>
+
+    <div class="upload-area" id="uploadArea">
+      <div class="upload-icon">🎬</div>
+      <p>Перетащите видео сюда или нажмите для выбора</p>
+      <input type="file" id="fileInput" accept="video/*" hidden>
+      <button class="upload-btn" onclick="document.getElementById('fileInput').click()">Выбрать видео</button>
+    </div>
+
+    <div id="fileInfo" class="file-info" style="display:none"></div>
+
+    <button id="analyzeBtn" class="analyze-btn" disabled>Анализировать</button>
+
+    <div id="loader" class="loader" style="display:none">
+      <div class="spinner"></div>
+      <p id="loaderText">Извлекаю кадры...</p>
+    </div>
+
+    <div id="result" class="result-card" style="display:none"></div>
+
+    <span class="history-link" id="historyToggle" onclick="toggleHistory()">📋 История анализов</span>
+
+    <div class="history-section" id="historySection">
+      <h3>Последние анализы</h3>
+      <div id="historyList">Загрузка...</div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    // Auth guard
+    const token = localStorage.getItem('token');
+    const userRaw = localStorage.getItem('user');
+    if (!token) {
+      window.location.href = '/auth.html';
+    }
+
+    // Show user info
+    if (userRaw) {
+      const user = JSON.parse(userRaw);
+      document.getElementById('userName').textContent = user.username;
+      document.getElementById('userAvatar').textContent = user.username[0].toUpperCase();
+    }
+
+    function logout() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/auth.html';
+    }
+
+    let historyVisible = false;
+    async function toggleHistory() {
+      historyVisible = !historyVisible;
+      const section = document.getElementById('historySection');
+      section.style.display = historyVisible ? 'block' : 'none';
+      if (historyVisible) await loadHistory();
+    }
+
+    async function loadHistory() {
+      const list = document.getElementById('historyList');
+      try {
+        const res = await fetch('/api/history', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+        if (!data.success || !data.history.length) {
+          list.innerHTML = '<p style="color:rgba(255,255,255,0.3);font-size:13px">Анализов пока нет</p>';
+          return;
+        }
+        const chipMap = {
+          'AI_GENERATED': ['chip-ai', '🤖 ИИ'],
+          'REAL': ['chip-real', '✅ Настоящее'],
+          'UNCLEAR': ['chip-unclear', '❓ Неясно']
+        };
+        list.innerHTML = data.history.map(h => {
+          const [cls, label] = chipMap[h.verdict] || chipMap['UNCLEAR'];
+          const date = new Date(h.created_at).toLocaleDateString('ru-RU', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+          return `<div class="history-item">
+            <div>
+              <div class="fname">📁 ${h.filename || 'видео'}</div>
+              <div class="date">${date} · ${h.confidence}% уверенность</div>
+            </div>
+            <span class="verdict-chip ${cls}">${label}</span>
+          </div>`;
+        }).join('');
+      } catch (e) {
+        list.innerHTML = '<p style="color:#fca5a5;font-size:13px">Ошибка загрузки</p>';
+      }
+    }
+  </script>
+</body>
+</html>

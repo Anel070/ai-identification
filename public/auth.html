@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Войти — AI Video Detector</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card {
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px;
+      padding: 40px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+    }
+    .logo {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .logo span { font-size: 40px; }
+    .logo h1 {
+      color: #fff;
+      font-size: 22px;
+      margin-top: 8px;
+    }
+    .logo p {
+      color: rgba(255,255,255,0.5);
+      font-size: 14px;
+      margin-top: 4px;
+    }
+    .tabs {
+      display: flex;
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 4px;
+      margin-bottom: 28px;
+    }
+    .tab {
+      flex: 1;
+      padding: 10px;
+      text-align: center;
+      color: rgba(255,255,255,0.5);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 10px;
+      transition: all 0.2s;
+    }
+    .tab.active {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+    }
+    .form { display: none; }
+    .form.active { display: block; }
+    .field {
+      margin-bottom: 16px;
+    }
+    .field label {
+      display: block;
+      color: rgba(255,255,255,0.7);
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+    .field input {
+      width: 100%;
+      padding: 12px 16px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 10px;
+      color: #fff;
+      font-size: 15px;
+      outline: none;
+      transition: border 0.2s;
+    }
+    .field input:focus {
+      border-color: #667eea;
+      background: rgba(102,126,234,0.1);
+    }
+    .field input::placeholder { color: rgba(255,255,255,0.3); }
+    .btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      margin-top: 8px;
+    }
+    .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .error {
+      background: rgba(239,68,68,0.15);
+      border: 1px solid rgba(239,68,68,0.3);
+      color: #fca5a5;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 13px;
+      margin-bottom: 16px;
+      display: none;
+    }
+    .success {
+      background: rgba(34,197,94,0.15);
+      border: 1px solid rgba(34,197,94,0.3);
+      color: #86efac;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 13px;
+      margin-bottom: 16px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">
+      <span>🔍</span>
+      <h1>AI Video Detector</h1>
+      <p>Определяем ИИ-видео за секунды</p>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('login')">Войти</div>
+      <div class="tab" onclick="switchTab('register')">Регистрация</div>
+    </div>
+
+    <!-- LOGIN -->
+    <div class="form active" id="loginForm">
+      <div class="error" id="loginError"></div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="loginEmail" placeholder="you@example.com">
+      </div>
+      <div class="field">
+        <label>Пароль</label>
+        <input type="password" id="loginPassword" placeholder="••••••••">
+      </div>
+      <button class="btn" id="loginBtn" onclick="doLogin()">Войти</button>
+    </div>
+
+    <!-- REGISTER -->
+    <div class="form" id="registerForm">
+      <div class="error" id="registerError"></div>
+      <div class="success" id="registerSuccess"></div>
+      <div class="field">
+        <label>Имя пользователя</label>
+        <input type="text" id="regUsername" placeholder="username">
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="regEmail" placeholder="you@example.com">
+      </div>
+      <div class="field">
+        <label>Пароль</label>
+        <input type="password" id="regPassword" placeholder="Минимум 6 символов">
+      </div>
+      <button class="btn" id="registerBtn" onclick="doRegister()">Создать аккаунт</button>
+    </div>
+  </div>
+
+  <script>
+    // Если уже залогинен — редирект на главную
+    if (localStorage.getItem('token')) {
+      window.location.href = '/';
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach((t, i) => {
+        t.classList.toggle('active', (tab === 'login' && i === 0) || (tab === 'register' && i === 1));
+      });
+      document.getElementById('loginForm').classList.toggle('active', tab === 'login');
+      document.getElementById('registerForm').classList.toggle('active', tab === 'register');
+    }
+
+    function showError(id, msg) {
+      const el = document.getElementById(id);
+      el.textContent = msg;
+      el.style.display = 'block';
+    }
+    function hideError(id) {
+      document.getElementById(id).style.display = 'none';
+    }
+
+    async function doLogin() {
+      hideError('loginError');
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      const btn = document.getElementById('loginBtn');
+
+      if (!email || !password) return showError('loginError', 'Заполните все поля');
+
+      btn.disabled = true;
+      btn.textContent = 'Входим...';
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+
+        if (!data.success) return showError('loginError', data.error);
+
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        window.location.href = '/';
+      } catch (err) {
+        showError('loginError', 'Ошибка соединения');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Войти';
+      }
+    }
+
+    async function doRegister() {
+      hideError('registerError');
+      document.getElementById('registerSuccess').style.display = 'none';
+      const username = document.getElementById('regUsername').value.trim();
+      const email = document.getElementById('regEmail').value.trim();
+      const password = document.getElementById('regPassword').value;
+      const btn = document.getElementById('registerBtn');
+
+      if (!username || !email || !password) return showError('registerError', 'Заполните все поля');
+
+      btn.disabled = true;
+      btn.textContent = 'Создаём...';
+
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, email, password })
+        });
+        const data = await res.json();
+
+        if (!data.success) return showError('registerError', data.error);
+
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        window.location.href = '/';
+      } catch (err) {
+        showError('registerError', 'Ошибка соединения');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Создать аккаунт';
+      }
+    }
+
+    // Enter key support
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        if (document.getElementById('loginForm').classList.contains('active')) doLogin();
+        else doRegister();
+      }
+    });
+  </script>
+</body>
+</html>
