@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Video Detector</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- AUTH SCREEN -->
+  <div id="authScreen" class="auth-screen">
+    <div class="auth-card">
+      <div class="auth-logo">🔍</div>
+      <h1>AI Video Detector</h1>
+      <p class="auth-subtitle">Войдите или создайте аккаунт</p>
+
+      <div class="auth-tabs">
+        <button class="tab-btn active" onclick="switchTab('login')">Войти</button>
+        <button class="tab-btn" onclick="switchTab('register')">Регистрация</button>
+      </div>
+
+      <!-- Login -->
+      <div id="loginForm" class="auth-form">
+        <input type="email" id="loginEmail" placeholder="Email" autocomplete="email">
+        <input type="password" id="loginPassword" placeholder="Пароль" autocomplete="current-password">
+        <button class="auth-btn" onclick="doLogin()">Войти</button>
+        <div id="loginError" class="auth-error"></div>
+      </div>
+
+      <!-- Register -->
+      <div id="registerForm" class="auth-form" style="display:none">
+        <input type="text" id="regUsername" placeholder="Имя пользователя" autocomplete="username">
+        <input type="email" id="regEmail" placeholder="Email" autocomplete="email">
+        <input type="password" id="regPassword" placeholder="Пароль (мин. 6 символов)" autocomplete="new-password">
+        <button class="auth-btn" onclick="doRegister()">Создать аккаунт</button>
+        <div id="registerError" class="auth-error"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN APP -->
+  <div id="appScreen" class="app-screen" style="display:none">
+    <header class="app-header">
+      <div class="header-title">🔍 AI Video Detector</div>
+      <div class="header-right">
+        <span id="headerUsername" class="header-user"></span>
+        <button class="btn-history" onclick="toggleHistory()">📋 История</button>
+        <button class="btn-logout" onclick="doLogout()">Выйти</button>
+      </div>
+    </header>
+
+    <div class="main-layout">
+      <!-- Main panel -->
+      <div class="main-panel">
+        <p class="subtitle">Определяет, создано ли видео с помощью ИИ</p>
+
+        <div class="upload-area" id="uploadArea">
+          <div class="upload-icon">🎬</div>
+          <p>Перетащите видео сюда или нажмите для выбора</p>
+          <input type="file" id="fileInput" accept="video/*" hidden>
+          <button class="upload-btn" onclick="document.getElementById('fileInput').click()">Выбрать видео</button>
+        </div>
+
+        <div id="fileInfo" class="file-info" style="display:none"></div>
+
+        <button id="analyzeBtn" class="analyze-btn" disabled>Анализировать</button>
+
+        <div id="loader" class="loader" style="display:none">
+          <div class="spinner"></div>
+          <p id="loaderText">Извлекаю кадры...</p>
+        </div>
+
+        <div id="result" class="result-card" style="display:none"></div>
+      </div>
+
+      <!-- History panel -->
+      <div id="historyPanel" class="history-panel" style="display:none">
+        <div class="history-header">
+          <h3>📋 История анализов</h3>
+          <button class="close-btn" onclick="toggleHistory()">✕</button>
+        </div>
+        <div id="historyList" class="history-list">
+          <p class="history-empty">Загрузка...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
